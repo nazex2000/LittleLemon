@@ -5,3 +5,6 @@ from rest_framework.permissions import BasePermission
 class IsManager(BasePermission):
     def has_permission(self, request, view):
         return request.user.groups.filter(name='managers').exists()
+class IsCustomer(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.groups.filter(name='customers').exists()
