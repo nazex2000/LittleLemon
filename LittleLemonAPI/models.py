@@ -21,7 +21,7 @@ class MenuItem(models.Model):
 class Cart(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     menuitem = models.ForeignKey(MenuItem, on_delete=models.CASCADE)
-    quantity = models.SmallIntegerField(),
+    quantity = models.SmallIntegerField()
     unit_price = models.DecimalField(max_digits=6, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -37,7 +37,7 @@ class Order(models.Model):
     delivery_crew = models.ForeignKey(User, on_delete=models.CASCADE, related_name='delivery_crew', null=True)
     status = models.BooleanField(default=0, db_index=True)
     total = models.DecimalField(max_digits=6, decimal_places=2)
-    date = models.DateField(db_index=True)
+    date = models.DateField(db_index=True, auto_now_add=True)
 
     def __str__(self):
         return f'{self.user} - {self.date}'
@@ -53,3 +53,4 @@ class OrderItem(models.Model):
         unique_together = ['order', 'menuitem']
     def __str__(self):
         return f'{self.order} - {self.menuitem}'
+

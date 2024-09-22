@@ -8,3 +8,6 @@ class IsManager(BasePermission):
 class IsCustomer(BasePermission):
     def has_permission(self, request, view):
         return request.user.groups.filter(name='customers').exists()
+class IsDeliveryCrew(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.groups.filter(name='delivery-crews').exists()
