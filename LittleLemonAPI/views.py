@@ -9,10 +9,14 @@ from .permissions import IsManager, IsCustomer, IsDeliveryCrew
 from .serializers import CategorySerializer, MenuItemSerializer, UserSerializer, CartSerializer, OrderSerializer, OrderItemSerializer
 from .models import Category, MenuItem, Cart, Order, OrderItem
 from django.db.utils import IntegrityError
+from rest_framework.filters import SearchFilter
+from django.core.paginator import Paginator, EmptyPage
+from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 
 # Create your views here.
 
 class UserRoleView(ListCreateAPIView):
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
     permission_classes = [IsAuthenticated, IsManager]
     queryset = Category.objects.all()
     serializer_class = UserSerializer
@@ -35,6 +39,7 @@ class UserRoleView(ListCreateAPIView):
             return Response({'error': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class UserRoleDetailView(DestroyAPIView):
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
     permission_classes = [IsAuthenticated, IsManager]
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -51,6 +56,7 @@ class UserRoleDetailView(DestroyAPIView):
         return Response(status=status.HTTP_200_OK)
 
 class CategoryView(ListCreateAPIView):
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
     permission_classes = [IsAuthenticated, IsManager]
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
@@ -58,6 +64,9 @@ class CategoryView(ListCreateAPIView):
 class MenuItemView(ListCreateAPIView):
     serializer_class = MenuItemSerializer
     queryset = MenuItem.objects.all()
+    filter_backends = [SearchFilter]
+    search_fields = ['title', 'category__name']
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     def get_permissions(self):
         if self.request.method == 'GET':
@@ -66,9 +75,34 @@ class MenuItemView(ListCreateAPIView):
             self.permission_classes = [IsAuthenticated, IsManager]
         return super().get_permissions()
 
+    def get_queryset(self):
+        category = self.request.query_params.get('category', None)
+        price_from = self.request.query_params.get('price_from', None)
+        price_to = self.request.query_params.get('price_to', None)
+        ordering = self.request.query_params.get('ordering', None)
+        perpage = self.request.query_params.get('perpage', None)
+        page = self.request.query_params.get('page', None)
+        queryset = MenuItem.objects.all()
+        if category:
+            queryset = queryset.filter(category__id=category)
+        if price_from:
+            queryset = queryset.filter(price__gte=price_from)
+        if price_to:
+            queryset = queryset.filter(price__lte=price_to)
+        if ordering:
+            ordering_fieds = ordering.split(',')
+            queryset = queryset.order_by(*ordering_fieds)
+        paginator = Paginator(queryset, perpage)
+        try:
+            queryset = paginator.page(number=page)
+        except EmptyPage:
+            queryset = paginator.page(number=paginator.num_pages)
+        return queryset
+
 class MenuItemDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = MenuItemSerializer
     queryset = MenuItem.objects.all()
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     def get_permissions(self):
         if self.request.method == 'GET':
@@ -79,6 +113,8 @@ class MenuItemDetailView(RetrieveUpdateDestroyAPIView):
 
 class CartView(APIView):
     permission_classes = [IsAuthenticated, IsCustomer]
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
+
     def get(self, request):
         user = request.user
         cart = Cart.objects.filter(user=user)
@@ -105,6 +141,7 @@ class OrderView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, (IsCustomer | IsManager | IsDeliveryCrew)]
     serializer_class = OrderSerializer
     queryset = Order.objects.all()
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     def get(self, request):
         user = self.request.user
@@ -149,6 +186,7 @@ class OrderDetailView(RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, IsCustomer]
     serializer_class = OrderSerializer
     queryset = Order.objects.all()
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     def get_permissions(self):
         if self.request.method == 'GET':
