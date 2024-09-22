@@ -4,10 +4,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User, Group
+from .permissions import IsManager
 
 # Create your views here.
 
 class UserRoleView(APIView):
+    permission_classes = [IsAuthenticated, IsManager]
     def get(self, request, id):
         try:
             user = User.objects.get(id=id)
