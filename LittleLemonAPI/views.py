@@ -30,7 +30,7 @@ class UserRoleView(ListCreateAPIView):
             group = Group.objects.get(name=group_name)
             user = User.objects.get(username=request.data['username'])
             user.groups.add(group)
-            return Response(status=status.HTTP_201_CREATED)
+            return Response({'success': 'User added to group'}, status=status.HTTP_201_CREATED)
         except KeyError:
             return Response({'error': 'Username field is required'}, status=status.HTTP_400_BAD_REQUEST)
         except User.DoesNotExist:
@@ -146,11 +146,11 @@ class OrderView(ListCreateAPIView):
     def get(self, request):
         user = self.request.user
         datav= []
-        if user.groups.filter(name='customers').exists():
+        if user.groups.filter(name='customer').exists():
             orders = Order.objects.filter(user=user)
-        elif user.groups.filter(name='managers').exists():
+        elif user.groups.filter(name='manager').exists():
             orders = Order.objects.all()
-        elif user.groups.filter(name='delivery-crews').exists():
+        elif user.groups.filter(name='delivery-crew').exists():
             orders = Order.objects.filter(delivery_crew=user)
         for order in orders:
             order_items = OrderItem.objects.filter(order=order)
